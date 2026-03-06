@@ -1,7 +1,7 @@
 //You can modify this component.
 
 import { useRef, useState } from "react";
-import { useUser } from "../contexts/UserProvider";
+import { useUser } from "../contexts/UserContext";
 import { Navigate } from "react-router-dom";
 
 export default function Login() {
@@ -30,7 +30,7 @@ export default function Login() {
 
     const result = await login(email, pass);
 
-    setControlState((prev) => {
+    setControlState(() => {
       return {
         isLoggingIn: false,
         isLoginError: !result,

@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useUser } from "../contexts/UserProvider";
+import { useUser } from "../contexts/UserContext";
 
 export default function Books () {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -12,7 +12,7 @@ export default function Books () {
   const [form, setForm] = useState({ title: "", author: "", quantity: 1, location: "" });
   const [message, setMessage] = useState("");
 
-  const loadBooks = async () => {
+  const loadBooks = useCallback(async () => {
     const query = new URLSearchParams();
     if (filters.title) query.set("title", filters.title);
     if (filters.author) query.set("author", filters.author);
@@ -27,11 +27,14 @@ export default function Books () {
     }
     const data = await result.json();
     setBooks(data);
-  };
+  }, [API_URL, filters.author, filters.includeDeleted, filters.title, isAdmin]);
 
   useEffect(() => {
-    loadBooks();
-  }, [filters.includeDeleted]);
+    const timer = setTimeout(() => {
+      void loadBooks();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [filters.includeDeleted, loadBooks]);
 
   const onSearch = async (e) => {
     e.preventDefault();

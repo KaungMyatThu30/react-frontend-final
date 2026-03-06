@@ -1,45 +1,32 @@
 //UserProvider.jsx
 
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { UserContext } from "./UserContext";
+
+const INITIAL_USER = {
+  isLoggedIn: false,
+  name: '',
+  email: '',
+  role: '',
+  id: '',
+};
 
 export function UserProvider ({children}) {
 
-  const initialUser = {
-    isLoggedIn: false,
-    name: '',
-    email: '',
-    role: '',
-    id: '',
-  };
-
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const [user, setUser] = useState(initialUser);
+  const [user, setUser] = useState(INITIAL_USER);
   const [isReady, setIsReady] = useState(false);
 
-  useEffect(() => {
-    const sessionRaw = localStorage.getItem("session");
-    if (sessionRaw) {
-      try {
-        const parsed = JSON.parse(sessionRaw);
-        setUser(parsed);
-      } catch (_) {
-        localStorage.removeItem("session");
-      }
-    }
-    checkProfile();
-  }, []);
-
-  const checkProfile = async () => {
+  const checkProfile = useCallback(async () => {
     try {
       const result = await fetch(`${API_URL}/api/user/profile`, {
         method: "GET",
         credentials: "include",
       });
       if (!result.ok) {
-        setUser(initialUser);
-        localStorage.setItem("session", JSON.stringify(initialUser));
+        setUser(INITIAL_USER);
+        localStorage.setItem("session", JSON.stringify(INITIAL_USER));
         return;
       }
       const profile = await result.json();
@@ -52,13 +39,26 @@ export function UserProvider ({children}) {
       };
       setUser(profileUser);
       localStorage.setItem("session", JSON.stringify(profileUser));
-    } catch (_) {
-      setUser(initialUser);
-      localStorage.setItem("session", JSON.stringify(initialUser));
+    } catch {
+      setUser(INITIAL_USER);
+      localStorage.setItem("session", JSON.stringify(INITIAL_USER));
     } finally {
       setIsReady(true);
     }
-  };
+  }, [API_URL]);
+
+  useEffect(() => {
+    const sessionRaw = localStorage.getItem("session");
+    if (sessionRaw) {
+      try {
+        const parsed = JSON.parse(sessionRaw);
+        setUser(parsed);
+      } catch {
+        localStorage.removeItem("session");
+      }
+    }
+    void checkProfile();
+  }, [checkProfile]);
 
   const login = async (email, password) => {
     try {
@@ -86,7 +86,7 @@ export function UserProvider ({children}) {
       setUser(loggedInUser);
       localStorage.setItem("session", JSON.stringify(loggedInUser));
       return true;
-    } catch (_) {
+    } catch {
       return false;
     }
   }
@@ -106,8 +106,4 @@ export function UserProvider ({children}) {
       {children}
     </UserContext.Provider>
   );
-}
-
-export function useUser () {
-  return useContext(UserContext);
 }
